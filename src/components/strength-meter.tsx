@@ -1,4 +1,5 @@
 import { cn } from "@/lib/utils";
+import { usePasswordStore } from "@/store/password-store";
 import { passwordStrength } from "check-password-strength";
 import { useMemo } from "react";
 
@@ -20,7 +21,8 @@ export function StrengthMeterTick({
   );
 }
 
-export function StrengthMeter({ password }: { password: string }) {
+export function StrengthMeter() {
+  const password = usePasswordStore(({ password }) => password);
   const strength = useMemo(
     () =>
       passwordStrength(password, [

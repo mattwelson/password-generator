@@ -5,47 +5,42 @@ import { Button } from "./ui/button";
 import { Checkbox } from "./ui/checkbox";
 import { Label } from "./ui/label";
 import { Slider } from "./ui/slider";
-import { useEffect, useState, type Dispatch, type SetStateAction } from "react";
-import { generate } from "generate-password";
 import { StrengthMeter } from "./strength-meter";
+import { usePasswordStore } from "@/store/password-store";
 
 export function PasswordGenerator() {
-  const [length, setLength] = useState(10);
-  const [uppercase, setUppercase] = useState(true);
-  const [lowercase, setLowercase] = useState(true);
-  const [numbers, setNumbers] = useState(true);
-  const [symbols, setSymbols] = useState(false);
-  const [password, setPassword] = useState("");
-  const [copied, setCopied] = useState(false);
-
-  function handleLengthChange([l]: number[]) {
-    setLength(l);
-  }
-
-  function handleCheckboxChange(set: Dispatch<SetStateAction<boolean>>) {
-    return function curriedChangeFunction(state: boolean) {
-      set(state);
-    };
-  }
+  const {
+    password,
+    copied,
+    length,
+    uppercase,
+    lowercase,
+    numbers,
+    symbols,
+    selectedCount,
+    generate,
+    setLength,
+    setCopied,
+    setChecks,
+  } = usePasswordStore();
 
   function handleCopy() {
     navigator.clipboard.writeText(password);
-    setCopied(true);
+    setCopied();
   }
 
-  useEffect(() => {
-    setPassword(generate({ length, uppercase, lowercase, numbers, symbols }));
-  }, [length, uppercase, lowercase, numbers, symbols]);
-
-  useEffect(() => {
-    if (copied) {
-      const timeout = setTimeout(() => setCopied(false), 3000);
-      return () => clearTimeout(timeout);
-    }
-  }, [copied]);
-
-  const isDisabled =
-    [uppercase, lowercase, numbers, symbols].filter((x) => x).length <= 1;
+  function handleCheckboxChange(
+    key: "uppercase" | "lowercase" | "numbers" | "symbols"
+  ) {
+    return (value: boolean) =>
+      setChecks({
+        uppercase,
+        lowercase,
+        numbers,
+        symbols,
+        [key]: value,
+      });
+  }
 
   return (
     <div className="flex flex-col max-w-md mx-auto mt-32 space-y-4">
@@ -72,15 +67,15 @@ export function PasswordGenerator() {
           value={[length]}
           min={0}
           max={64}
-          onValueChange={handleLengthChange}
+          onValueChange={([length]) => setLength(length)}
         />
         <div className="my-4 space-y-4">
           <div className="flex items-center space-x-2">
             <Checkbox
               id="uppercase"
               checked={uppercase}
-              onCheckedChange={handleCheckboxChange(setUppercase)}
-              disabled={isDisabled && uppercase}
+              onCheckedChange={handleCheckboxChange("uppercase")}
+              disabled={selectedCount <= 1 && uppercase}
             />
             <Label htmlFor="uppercase">
               <span className="">Include Uppercase Letters</span>
@@ -90,8 +85,8 @@ export function PasswordGenerator() {
             <Checkbox
               id="lowercase"
               checked={lowercase}
-              onCheckedChange={handleCheckboxChange(setLowercase)}
-              disabled={isDisabled && lowercase}
+              onCheckedChange={handleCheckboxChange("lowercase")}
+              disabled={selectedCount <= 1 && lowercase}
             />
             <Label htmlFor="lowercase">
               <span className="">Include Lowercase Letters</span>
@@ -101,8 +96,8 @@ export function PasswordGenerator() {
             <Checkbox
               id="number"
               checked={numbers}
-              onCheckedChange={handleCheckboxChange(setNumbers)}
-              disabled={isDisabled && numbers}
+              onCheckedChange={handleCheckboxChange("numbers")}
+              disabled={selectedCount <= 1 && numbers}
             />
             <Label htmlFor="number">
               <span className="">Include Numbers</span>
@@ -112,8 +107,8 @@ export function PasswordGenerator() {
             <Checkbox
               id="symbols"
               checked={symbols}
-              onCheckedChange={handleCheckboxChange(setSymbols)}
-              disabled={isDisabled && symbols}
+              onCheckedChange={handleCheckboxChange("symbols")}
+              disabled={selectedCount <= 1 && symbols}
             />
             <Label htmlFor="symbols">
               <span className="">Include Symbols</span>
@@ -122,16 +117,9 @@ export function PasswordGenerator() {
         </div>
         <div className="flex justify-between bg-background p-4 my-4">
           <span className="text-sm text-foreground/50">STRENGTH</span>
-          <StrengthMeter password={password} />
+          <StrengthMeter />
         </div>
-        <Button
-          className="w-full"
-          onClick={() =>
-            setPassword(
-              generate({ length, uppercase, lowercase, numbers, symbols })
-            )
-          }
-        >
+        <Button className="w-full" onClick={() => generate()}>
           GENERATE <ArrowRight />
         </Button>
       </div>
